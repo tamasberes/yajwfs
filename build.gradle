@@ -22,3 +22,6 @@ dependencies {
     compile files('libs/java-json.jar')
 }
 
+apply plugin: 'maven'
+
+group = 'com.github.tamasberes'
