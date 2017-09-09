@@ -81,9 +81,8 @@ public class ShoutCastApi {
      * http://wiki.shoutcast.com/wiki/SHOUTcast_Radio_Directory_API#Get_All_Genres
      *
      * @param callback
-     * @throws IOException
      */
-    public void getAllGenres(final ApiManagerInterface<GenreList> callback) throws IOException {
+    public void getAllGenres(final ApiManagerInterface<GenreList> callback) {
         shoutcastServiceXml.genGenreList(apiKey).enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {
@@ -283,9 +282,8 @@ public class ShoutCastApi {
      * @param searchText
      * @param limit
      * @param callback
-     * @throws IOException
      */
-    public void stationSearch(final String searchText, int limit, final ApiManagerInterface<StationsResponseContainer> callback) throws IOException {
+    public void stationSearch(final String searchText, int limit, final ApiManagerInterface<StationsResponseContainer> callback) {
         shoutcastServiceXml.getStationsByKeyword(apiKey, searchText, limit).enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {
