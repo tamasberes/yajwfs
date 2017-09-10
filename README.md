@@ -78,7 +78,7 @@ public final class ShoutcastHelper {
         Cache cache = new Cache(httpCacheDirectory, cacheSize);
         okHttpBuilder.cache(cache);
         OkHttpClient okHttpClient = okHttpBuilder.build();
-        mShoutCastApi = new ShoutCastApi(Config.SHOUTCAST_API_KEY, okHttpClient);
+        mShoutCastApi = new ShoutCastApi(Config.SHOUTCAST_API_KEY, okHttpClient, BuildConfig.DEBUG);
     }
 }
 ```
