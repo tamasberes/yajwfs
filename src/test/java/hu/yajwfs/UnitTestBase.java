@@ -25,6 +25,6 @@ public class UnitTestBase {
                 return response;
             }
         });
-        mShoutCastApi = new ShoutCastApi(Config.SHOUTCAST_API_KEY, okHttpClient);
+        mShoutCastApi = new ShoutCastApi(Config.SHOUTCAST_API_KEY, okHttpClient, true);
     }
 }

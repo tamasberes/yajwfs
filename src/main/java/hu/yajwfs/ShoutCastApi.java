@@ -25,9 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ShoutCastApi {
-    private static final boolean VERBOSE_LOG = true;
     private static final String RESPONSE_FORMAT_JSON = "json";
     private final Pattern REMOVE_TAGS = Pattern.compile("<.+?>");
+    private boolean isVerboseLog = true;
     private ShoutcastServiceJson shoutcastServiceJson;
     private ShoutcastServiceXml shoutcastServiceXml;
     private ShoutcastServiceString shoutcastServiceTuneIn;
@@ -43,10 +43,11 @@ public class ShoutCastApi {
      *
      * @param apiKey       your shoutcast api key. See: https://www.shoutcast.com/Developer
      * @param okHttpClient your custom {@link OkHttpClient}. Set up your caching etc. in it.
+     * @param verboseLog   true: enable some extra logging
      */
-    public ShoutCastApi(String apiKey, OkHttpClient okHttpClient) {
+    public ShoutCastApi(String apiKey, OkHttpClient okHttpClient, boolean verboseLog) {
         this.apiKey = apiKey;
-
+        this.isVerboseLog = verboseLog;
         //used for all json responses
         Retrofit retrofitJson = new Retrofit.Builder()
                 .baseUrl("http://api.shoutcast.com/")
@@ -111,7 +112,7 @@ public class ShoutCastApi {
                     callback.onError(new IOException("response body is null"));
                     return;
                 }
-                if (VERBOSE_LOG) {
+                if (isVerboseLog) {
                     System.out.println(jsonObj);
                 }
                 callback.onResult(new Gson().fromJson(jsonObj.toString(), clazz));
@@ -145,7 +146,7 @@ public class ShoutCastApi {
                             callback.onError(new IOException("response body is null"));
                             return;
                         }
-                        if (VERBOSE_LOG) {
+                        if (isVerboseLog) {
                             System.out.println(convertedToJsonFromXml);
                         }
                         Object stationObject = convertedToJsonFromXml.getJSONObject("stationlist").get("station");
@@ -155,7 +156,7 @@ public class ShoutCastApi {
                         } else {
                             Object singleStation = convertedToJsonFromXml.getJSONObject("stationlist").get("station");
                             convertedToJsonFromXml.getJSONObject("stationlist").put("station", new JSONArray(new Object[]{singleStation})); //overwrite the single object with an array which has 1 element, so gson can parse it
-                            if (VERBOSE_LOG) {
+                            if (isVerboseLog) {
                                 System.out.println("modified json:" + convertedToJsonFromXml.toString());
                             }
                             callback.onResult(new Gson().fromJson(convertedToJsonFromXml.toString(), StationsResponseContainer.class));
@@ -298,7 +299,7 @@ public class ShoutCastApi {
                             callback.onError(new IOException("failed to get response body xml"));
                             return;
                         }
-                        if (VERBOSE_LOG) {
+                        if (isVerboseLog) {
                             System.out.println(convertedToJsonFromXml);
                         }
                         Object stationObject = convertedToJsonFromXml.getJSONObject("stationlist").get("station");
@@ -308,7 +309,7 @@ public class ShoutCastApi {
                         } else {
                             Object singleStation = convertedToJsonFromXml.getJSONObject("stationlist").get("station");
                             convertedToJsonFromXml.getJSONObject("stationlist").put("station", new JSONArray(new Object[]{singleStation})); //overwrite the single object with an array which has 1 element, so gson can parse it
-                            if (VERBOSE_LOG) {
+                            if (isVerboseLog) {
                                 System.out.println("modified json:" + convertedToJsonFromXml.toString());
                             }
                             callback.onResult(new Gson().fromJson(convertedToJsonFromXml.toString(), StationsResponseContainer.class));
@@ -350,7 +351,7 @@ public class ShoutCastApi {
         }
 
         try {
-            if (VERBOSE_LOG) {
+            if (isVerboseLog) {
                 System.out.println("Using url:" + parsedUrl);
             }
             okhttp3.Response call = okHttpClient.newCall(new Request.Builder().get().url(parsedUrl).build()).execute();
@@ -358,18 +359,30 @@ public class ShoutCastApi {
                 throw new IOException("failed to get station info. call failed");
             }
             String response = removeHtmlTags(call.body().string());
-            if (VERBOSE_LOG) {
+            if (isVerboseLog) {
                 System.out.println("response:" + response);
             }
             int separatorCount = response.length() - response.replace(",", "").length();
-            if (VERBOSE_LOG) {
+            if (isVerboseLog) {
                 System.out.println("separatorCount:" + separatorCount);
             }
             if (response.isEmpty() || !response.contains(",") || separatorCount != 6) {
                 throw new IOException("failed to get station info. station does not support it");
             }
+
+            //trying to parse a faulty response here:
+            if (response.endsWith(",")) {
+                response = response.substring(0, response.length() - 1); //cut off ending , and replace it with an empty string. This last parameter is the "now playing" text
+                if (isVerboseLog) {
+                    System.out.println("response, cut off extra ,:" + response);
+                }
+            }
             String[] cutUp = response.split(",");
+            if (cutUp.length == 6) { //if just the songname is missing, that's fine.
+                cutUp = new String[]{cutUp[0], cutUp[1], cutUp[2], cutUp[3], cutUp[4], cutUp[5], cutUp[6], ""};
+            }
             if (cutUp.length != 7) { //it must have 7 items. the last one is the only important one, current song name
+                //TODO maybe return a smaller set of values, if not all are available
                 throw new IOException("failed to get station info. station does not support it all of it, just a subset");
             }
             return new StationInfo(cutUp[0], cutUp[1], cutUp[2], cutUp[3], cutUp[4], cutUp[5], cutUp[6]);
